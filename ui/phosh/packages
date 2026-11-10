@@ -2,10 +2,7 @@ chatty
 cups
 cups-filters
 danctnix-phosh-ui-meta
-danctnix-tweaks-app
-danctnix-tweaks-app-phosh
 eog
-evince-mobile
 fwupd
 geary
 ghostscript
@@ -24,7 +21,6 @@ gnome-weather
 gsfonts
 gst-plugins-bad
 gst-plugins-good
-gtk3-mobile
 hunspell-en_us
 lollypop
 megapixels
@@ -34,6 +30,7 @@ mobile-config-firefox
 nautilus
 networkmanager-openvpn
 noto-fonts-emoji
+papers
 phosh-mobile-settings
 phosh-wallpapers
 postprocessd
