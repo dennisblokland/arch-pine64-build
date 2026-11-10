@@ -19,7 +19,7 @@ date=$(date +%Y%m%d)
 
 error() { echo -e "\e[41m\e[5mERROR:\e[49m\e[25m $1" && exit 1; }
 check_dependency() { [ $(which $1) ] || error "$1 not found. Please make sure it is installed and on your PATH."; }
-usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir]"; }
+usage() { error "$0 [-a ARCHITECTURE] [-d device] [-u ui] [-h hostname] [--osk-sdl] [--noconfirm] [--cachedir directory] [--no-cachedir] [--localpkgs directory]"; }
 cleanup() {
     trap '' EXIT
     trap '' INT
@@ -60,6 +60,7 @@ parse_args() {
             --osk-sdl) OSK_SDL=1;;
             --cachedir) cachedir=$2; shift ;;
             --no-cachedir) cachedir= ;;
+            --localpkgs) localpkgs=$2; shift ;;
             *) usage ;;
         esac
         shift
@@ -226,6 +227,21 @@ if pacman -Q linux-firmware >/dev/null 2>&1; then
 fi"
     fi
 
+    # Packages built locally (e.g. a device package newer than the one in the
+    # repo) are installed after the repo packages; pacman resolves their
+    # dependencies from the repos.
+    local_install=""
+    if [ -n "$localpkgs" ]; then
+        mkdir -p "$temp/localpkgs"
+        for pkg in "$localpkgs"/*.pkg.tar.*; do
+            if [ -e "$pkg" ] && [[ $pkg != *.sig ]]; then
+                cp "$pkg" "$temp/localpkgs/"
+            fi
+        done
+        compgen -G "$temp/localpkgs/*" > /dev/null || error "No packages found in $localpkgs"
+        local_install="pacman -U --noconfirm --overwrite=* /localpkgs/*.pkg.tar.*"
+    fi
+
     cat > "$temp/second-phase" <<EOF
 #!/bin/bash
 set -e
@@ -235,6 +251,7 @@ pacman-key --lsign-key 68B3537F39A313B3E574D06777193F152BDBE6A6
 pacman -Rsn --noconfirm linux-$arch
 pacman -Syu --noconfirm --overwrite=*
 pacman -S --noconfirm --overwrite=* --needed ${packages_device[@]} ${packages_ui[@]}
+${local_install}
 
 ${firmware_cleanup}
 
@@ -273,6 +290,7 @@ EOF
 
     chmod +x "$temp/second-phase"
     do_chroot /second-phase || error "Failed to run the second phase rootfs build!"
+    rm -rf "$temp/localpkgs"
 
     cp -r overlays/base/* "$temp/"
     [ -d "overlays/$ui" ] && cp -r overlays/$ui/* "$temp/"
