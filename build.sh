@@ -89,10 +89,27 @@ parse_presets() {
         done
     fi
 
+    # UI packages a device has no use for, e.g. phone apps on a tablet without a modem.
+    if [ -e "devices/$device/packages-$ui-exclude" ]; then
+        local exclude kept=() p
+        mapfile -t exclude < "devices/$device/packages-$ui-exclude"
+        for p in "${packages_ui[@]}"; do
+            [[ " ${exclude[*]} " == *" $p "* ]] || kept+=( "$p" )
+        done
+        packages_ui=( "${kept[@]}" )
+    fi
+
     if [ -e "ui/$ui/postinstall" ]; then
         while IFS= read -r postinstall_line; do
             postinstall+=("$postinstall_line\n")
         done < ui/$ui/postinstall
+    fi
+
+    # Device-specific steps for this UI, run after the UI's own postinstall.
+    if [ -e "devices/$device/postinstall-$ui" ]; then
+        while IFS= read -r postinstall_line; do
+            postinstall+=("$postinstall_line\n")
+        done < "devices/$device/postinstall-$ui"
     fi
 }
 

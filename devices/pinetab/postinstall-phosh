@@ -1,0 +1,4 @@
+# The PineTab has no modem: ui/phosh/postinstall enables ModemManager, which phosh-mobile-settings (cellbroadcastd)
+# and danctnix-phosh-ui-meta (wys) still pull in.
+systemctl disable ModemManager
+systemctl mask ModemManager
